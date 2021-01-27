@@ -25,6 +25,8 @@ class MESHVFY_property_group(bpy.types.PropertyGroup):
 
     count_n_poles: BoolProperty(name = 'N-Poles', default = False)
     count_e_poles: BoolProperty(name = 'E-Poles', default = False)
+    count_n_poles_result: IntProperty(name = '', default = 0)
+    count_e_poles_result: IntProperty(name = '', default = 0)
 
     tforms_applied: BoolProperty(name = 'Transforms Applied (Rot & Scale)', default = True)
     tforms_applied_result: BoolProperty(name = '', default = True)

@@ -56,13 +56,31 @@ class MESHVFY_OT_verify_mesh(bpy.types.Operator):
         if mesh_vfy_prefs.count_tris or mesh_vfy_prefs.count_quads or mesh_vfy_prefs.count_ngons:
             for loop in self.ob.data.polygons:
                 count = loop.loop_total
+
+                # Tris
                 if count == 3 and mesh_vfy_prefs.count_tris:
                     mesh_vfy_prefs.count_tris_result += 1
+
+                # Quads
                 elif count == 4 and mesh_vfy_prefs.count_quads:
                     mesh_vfy_prefs.count_quads_result += 1
+
+                # Ngons
                 elif count > 4 and mesh_vfy_prefs.count_ngons:
                     mesh_vfy_prefs.count_ngons_result += 1
-        
+
+        if mesh_vfy_prefs.count_e_poles or mesh_vfy_prefs.count_n_poles:
+            self.bm.from_mesh(self.ob.data)
+
+            for v in self.bm.verts:
+                # N-Poles
+                if len(v.link_edges) >= 5 and mesh_vfy_prefs.count_n_poles:
+                    mesh_vfy_prefs.count_n_poles_result += 1
+
+                # E-Poles
+                elif len(v.link_edges) == 3 and mesh_vfy_prefs.count_e_poles:
+                    mesh_vfy_prefs.count_e_poles_result += 1
+
         # Transforms Applied
         if mesh_vfy_prefs.tforms_applied:
             if self.ob.scale[0] != 1 or self.ob.scale[1] != 1 or self.ob.scale[2] != 1 or self.ob.rotation_euler[0] != 0 or self.ob.rotation_euler[1] != 0 or self.ob.rotation_euler[2] != 0:
@@ -112,12 +130,9 @@ class MESHVFY_OT_verify_mesh(bpy.types.Operator):
 
         # Correct Normal Orientation
         if mesh_vfy_prefs.correct_normal_orient:
-            bpy.ops.object.mode_set(mode="EDIT")
+            self.bm.from_mesh(self.ob.data)
 
-            bm = bmesh.new()
-            bm = bmesh.from_edit_mesh(self.ob.data)
-
-            for edge in bm.edges:
+            for edge in self.bm.edges:
                 if edge.select:
                     if len(edge.link_faces) == 2 and not edge.is_contiguous:
                         mesh_vfy_prefs.correct_normal_orient_result = False
@@ -180,6 +195,9 @@ class MESHVFY_OT_verify_mesh(bpy.types.Operator):
         mesh_vfy_prefs.count_quads_result = 0
         mesh_vfy_prefs.count_ngons_result = 0
 
+        mesh_vfy_prefs.count_n_poles_result = 0
+        mesh_vfy_prefs.count_e_poles_result = 0
+
         mesh_vfy_prefs.tforms_applied_result = True
         mesh_vfy_prefs.tforms_applied_amount = 0
 
@@ -197,6 +215,9 @@ class MESHVFY_OT_verify_mesh(bpy.types.Operator):
 
         mesh_vfy_prefs.correct_normal_orient_result = True
         mesh_vfy_prefs.correct_normal_orient_amount = 0
+        
+        # Create a global bmesh to dunk meshes into
+        self.bm = bmesh.new()
 
         if mesh_vfy_prefs.use_selected_only:
             for self.ob in context.selected_objects:
