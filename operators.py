@@ -43,11 +43,39 @@ class MESHVFY_OT_verify_mesh(bpy.types.Operator):
     bl_idname = "mesh_vfy.verify_mesh"
     bl_label = "Verify Meshes"
     bl_description = "Verify that your meshes are set up properly based on an array of options"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER'}
 
     @classmethod
     def poll(cls, context):
         return context.view_layer.objects
+
+    def zeroed_properties(self, context):
+        mesh_vfy_prefs = context.scene.mesh_vfy_prefs
+
+        mesh_vfy_prefs.count_tris_result = 0
+        mesh_vfy_prefs.count_quads_result = 0
+        mesh_vfy_prefs.count_ngons_result = 0
+
+        mesh_vfy_prefs.count_n_poles_result = 0
+        mesh_vfy_prefs.count_e_poles_result = 0
+
+        mesh_vfy_prefs.tforms_applied_result = True
+        mesh_vfy_prefs.tforms_applied_amount = 0
+
+        mesh_vfy_prefs.seams_match_smoothing_result = True
+
+        mesh_vfy_prefs.manifold_loose_wire_result = False
+        mesh_vfy_prefs.manifold_double_faces_result = False
+        mesh_vfy_prefs.manifold_airtight_result = True
+
+        mesh_vfy_prefs.zeroed_tforms_result = True
+        mesh_vfy_prefs.zeroed_tforms_amount = 0
+
+        mesh_vfy_prefs.flipped_uvs_result = False
+        mesh_vfy_prefs.flipped_uvs_amount = 0
+
+        mesh_vfy_prefs.correct_normal_orient_result = True
+        mesh_vfy_prefs.correct_normal_orient_amount = 0
 
     def mesh_vfy(self, context):
         mesh_vfy_prefs = context.scene.mesh_vfy_prefs
@@ -95,32 +123,6 @@ class MESHVFY_OT_verify_mesh(bpy.types.Operator):
                         if not edge.use_edge_sharp or not edge.use_seam:
                             mesh_vfy_prefs.seams_match_smoothing_result = False
                             break
-        
-        # Manifold Meshes
-        if mesh_vfy_prefs.manifold_meshes:
-            bpy.ops.object.mode_set(mode="EDIT")
-            bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='VERT')
-
-            # Loose/Wire Geometry
-            if not mesh_vfy_prefs.manifold_loose_wire_result:
-                bpy.ops.mesh.select_non_manifold(extend=False, use_wire=True, use_boundary=False, use_multi_face=False, use_non_contiguous=False, use_verts=True)
-                if self.ob.data.total_vert_sel:
-                    mesh_vfy_prefs.manifold_loose_wire_result = True
-
-            # Multi-Face Geometry
-            if not mesh_vfy_prefs.manifold_double_faces_result:
-                bpy.ops.mesh.select_non_manifold(extend=False, use_wire=False, use_boundary=False, use_multi_face=True, use_non_contiguous=False, use_verts=False)
-                if self.ob.data.total_vert_sel:
-                    mesh_vfy_prefs.manifold_double_faces_result = True
-            
-            # Non-Airtight Geometry
-            if mesh_vfy_prefs.manifold_airtight_result:
-                bpy.ops.mesh.select_non_manifold(extend=False, use_wire=False, use_boundary=True, use_multi_face=False, use_non_contiguous=False, use_verts=False)
-                if self.ob.data.total_vert_sel:
-                    mesh_vfy_prefs.manifold_airtight_result = False
-
-            bpy.ops.mesh.select_all(action='DESELECT')
-            bpy.ops.object.mode_set(mode="OBJECT")
 
         # Zeroed Transforms
         if mesh_vfy_prefs.zeroed_tforms:
@@ -166,6 +168,34 @@ class MESHVFY_OT_verify_mesh(bpy.types.Operator):
                         mesh_vfy_prefs.flipped_uvs_amount += 1
                         break
 
+        # EDIT MODE OPERATIONS
+        
+        # Manifold Meshes
+        if mesh_vfy_prefs.manifold_meshes:
+            bpy.ops.object.mode_set(mode="EDIT")
+            bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='VERT')
+
+            # Loose/Wire Geometry
+            if not mesh_vfy_prefs.manifold_loose_wire_result:
+                bpy.ops.mesh.select_non_manifold(extend=False, use_wire=False, use_boundary=False, use_multi_face=False, use_non_contiguous=False, use_verts=True)
+                if self.ob.data.total_vert_sel:
+                    mesh_vfy_prefs.manifold_loose_wire_result = True
+
+            # Multi-Face Geometry
+            if not mesh_vfy_prefs.manifold_double_faces_result:
+                bpy.ops.mesh.select_non_manifold(extend=False, use_wire=False, use_boundary=False, use_multi_face=True, use_non_contiguous=False, use_verts=False)
+                if self.ob.data.total_vert_sel:
+                    mesh_vfy_prefs.manifold_double_faces_result = True
+            
+            # Non-Airtight Geometry
+            if mesh_vfy_prefs.manifold_airtight_result:
+                bpy.ops.mesh.select_non_manifold(extend=False, use_wire=False, use_boundary=True, use_multi_face=False, use_non_contiguous=False, use_verts=False)
+                if self.ob.data.total_vert_sel:
+                    mesh_vfy_prefs.manifold_airtight_result = False
+
+            bpy.ops.mesh.select_all(action='DESELECT')
+            bpy.ops.object.mode_set(mode="OBJECT")
+
     def execute(self, context):
         mesh_vfy_prefs = context.scene.mesh_vfy_prefs
 
@@ -185,48 +215,26 @@ class MESHVFY_OT_verify_mesh(bpy.types.Operator):
             mode_callback = context.active_object.mode
 
             bpy.ops.object.mode_set(mode="OBJECT")
+        else:
+            context.view_layer.objects.active = context.view_layer.objects[0]
 
         # Check to show results
         mesh_vfy_prefs.verify_mesh_ran = True
 
         # Reset Variables/Properties (Default value is based on "healthy" state)
         # Example: 'tforms_applied_result=True' because you would want them applied but 'flipped_uvs_result=False' because you wouldn't want any UVs flipped)
-        mesh_vfy_prefs.count_tris_result = 0
-        mesh_vfy_prefs.count_quads_result = 0
-        mesh_vfy_prefs.count_ngons_result = 0
+        self.zeroed_properties(context)
 
-        mesh_vfy_prefs.count_n_poles_result = 0
-        mesh_vfy_prefs.count_e_poles_result = 0
-
-        mesh_vfy_prefs.tforms_applied_result = True
-        mesh_vfy_prefs.tforms_applied_amount = 0
-
-        mesh_vfy_prefs.seams_match_smoothing_result = True
-
-        mesh_vfy_prefs.manifold_loose_wire_result = False
-        mesh_vfy_prefs.manifold_double_faces_result = False
-        mesh_vfy_prefs.manifold_airtight_result = True
-
-        mesh_vfy_prefs.zeroed_tforms_result = True
-        mesh_vfy_prefs.zeroed_tforms_amount = 0
-
-        mesh_vfy_prefs.flipped_uvs_result = False
-        mesh_vfy_prefs.flipped_uvs_amount = 0
-
-        mesh_vfy_prefs.correct_normal_orient_result = True
-        mesh_vfy_prefs.correct_normal_orient_amount = 0
+        #del bpy.context.scene['mesh_vfy_prefs']
         
-        # Create a global bmesh to dunk meshes into
+        # Create a global bmesh to slam dunk meshes into
         self.bm = bmesh.new()
 
-        if mesh_vfy_prefs.use_selected_only:
-            for self.ob in context.selected_objects:
-                if self.ob.type == 'MESH':
-                    self.mesh_vfy(context)
-        else:
-            for self.ob in context.view_layer.objects:
-                if self.ob.type == 'MESH':
-                    self.mesh_vfy(context)
+        to_be_verified_objects = context.selected_objects if mesh_vfy_prefs.use_selected_only else context.view_layer.objects
+
+        for self.ob in to_be_verified_objects:
+            if self.ob.type == 'MESH':
+                self.mesh_vfy(context)
 
         # Reset context mode
         if 'mode_callback' in locals():
