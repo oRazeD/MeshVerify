@@ -1,5 +1,45 @@
 import bpy
 from bpy.props import StringProperty, IntProperty, PointerProperty, BoolProperty
+from bl_operators.presets import AddPresetBase
+from bl_ui.utils import PresetPanel
+from bpy.types import Panel, Menu
+
+
+class MESHVFY_MT_presets(Menu):
+    bl_label = ""
+    preset_subdir = "meshVerify"
+    preset_operator = "script.execute_preset"
+    draw = Menu.draw_preset
+
+
+class MESHVFY_PT_presets(PresetPanel, Panel):
+    bl_label = 'MESHVFY Presets'
+    preset_subdir = 'mesh_vfy'
+    preset_operator = 'script.execute_preset'
+    preset_add_operator = 'mesh_vfy.preset_add'
+
+
+class MESHVFY_OT_add_preset(AddPresetBase, bpy.types.Operator):
+    bl_idname = "mesh_vfy.preset_add"
+    bl_label = "Add a new preset"
+    preset_menu = "MESHVFY_MT_presets"
+
+    # Variable used for all preset values
+    preset_defines = ["mesh_vfy_prefs = bpy.context.scene.mesh_vfy_prefs"]
+
+    # Properties to store in the preset
+    preset_values = [
+        "mesh_vfy_prefs.use_selected_only",
+
+        "mesh_vfy_prefs.count_tris",
+        "mesh_vfy_prefs.count_quads",
+        "mesh_vfy_prefs.count_ngons",
+        "mesh_vfy_prefs.count_tris_result",
+        "mesh_vfy_prefs.count_quads_result",
+        "mesh_vfy_prefs.count_ngons_result"]
+
+    # Where to store the preset
+    preset_subdir = "mesh_vfy"
 
 
 ##################################
@@ -88,13 +128,20 @@ class MESHVFY_property_group(bpy.types.PropertyGroup):
 ##################################
 
 
+classes = (MESHVFY_MT_presets,
+           MESHVFY_PT_presets,
+           MESHVFY_OT_add_preset,
+           MESHVFY_property_group)
+
 def register():
-    bpy.utils.register_class(MESHVFY_property_group)
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
     bpy.types.Scene.mesh_vfy_prefs = PointerProperty(type = MESHVFY_property_group)
 
 def unregister():
-    bpy.utils.unregister_class(MESHVFY_property_group)
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
 
     del bpy.types.Scene.mesh_vfy_prefs
 

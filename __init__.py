@@ -13,7 +13,7 @@ import bpy
 
 
 module_names = ("ui",
-                "property",
+                "preferences",
                 "operators")
                 
 modules = []
