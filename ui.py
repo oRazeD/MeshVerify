@@ -3,6 +3,7 @@ from bpy.types import Panel
 import os
 import bpy.utils.previews
 from .operators import convert_number
+from .preferences import MESHVFY_PT_presets
 
 
 ##############################
@@ -19,19 +20,18 @@ class PanelInfo:
 class MESHVFY_PT_run_panel(PanelInfo, Panel):
     bl_label = 'Verify Mesh'
 
+    def draw_header_preset(self, context):
+        MESHVFY_PT_presets.draw_panel_header(self.layout)
+
     def draw(self, context):
         mesh_vfy_prefs = context.scene.mesh_vfy_prefs
 
         layout = self.layout
 
-        pcoll = preview_collections["main"]
-
-        msh_verify_logo = pcoll["msh_verify_logo"]
-
         col = layout.column(align = True)
         row = col.row(align = True)
         row.scale_y = 1.6
-        row.operator("mesh_vfy.verify_mesh", icon_value=msh_verify_logo.icon_id)
+        row.operator("mesh_vfy.verify_mesh", icon_value=preview_collections["main"]["msh_verify_logo"].icon_id)
 
         box = col.box()
         box.prop(mesh_vfy_prefs, 'use_selected_only')
@@ -113,14 +113,14 @@ class MESHVFY_PT_configure_uv_checks(PanelInfo, Panel):
         col_left.prop(mesh_vfy_prefs, 'flipped_uvs', text = '_Optimal UV Usage:')
         col_right.prop(mesh_vfy_prefs, 'optimal_uv_usage')
 
-        split = col.split(factor=.7)
-        col_left = split.column()
-        col_right = split.column()
-        
-        col_left.separator(factor=.25)
-        col_right.separator(factor=.25)
-        col_left.prop(mesh_vfy_prefs, 'flipped_uvs', text = '_Lightmap UVs Present:')
-        col_right.prop(mesh_vfy_prefs, 'lightmap_suffix')
+        #split = col.split(factor=.7)
+        #col_left = split.column()
+        #col_right = split.column()
+        #
+        #col_left.separator(factor=.25)
+        #col_right.separator(factor=.25)
+        #col_left.prop(mesh_vfy_prefs, 'flipped_uvs', text = '_Lightmap UVs Present:')
+        #col_right.prop(mesh_vfy_prefs, 'lightmap_suffix')
 
 
 class MESHVFY_PT_results(PanelInfo, Panel):
@@ -135,22 +135,29 @@ class MESHVFY_PT_results(PanelInfo, Panel):
         if mesh_vfy_prefs.verify_mesh_ran:
             if mesh_vfy_prefs.count_tris or mesh_vfy_prefs.count_quads or mesh_vfy_prefs.count_ngons or mesh_vfy_prefs.count_e_poles or mesh_vfy_prefs.count_n_poles:
                 box = layout.box()
-                row = box.row(align = True)
+                col = box.column(align = True)
+                col.scale_y = 1.05
 
-                if mesh_vfy_prefs.count_tris:
-                    row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_tris_result)}", icon = 'OUTLINER_DATA_MESH')
+                if mesh_vfy_prefs.count_tris or mesh_vfy_prefs.count_quads or mesh_vfy_prefs.count_ngons:
+                    row = col.row(align = True)
 
-                if mesh_vfy_prefs.count_quads:
-                    row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_quads_result)}", icon = 'MATPLANE')
+                    if mesh_vfy_prefs.count_tris:
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_tris_result)}", icon_value = preview_collections["main"]["tri_icon_32"].icon_id)
 
-                if mesh_vfy_prefs.count_ngons:
-                    row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_ngons_result)}", icon = 'SEQ_CHROMA_SCOPE')
+                    if mesh_vfy_prefs.count_quads:
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_quads_result)}", icon_value = preview_collections["main"]["quad_icon_32"].icon_id)
 
-                if mesh_vfy_prefs.count_n_poles:
-                    row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_n_poles_result)}")
+                    if mesh_vfy_prefs.count_ngons:
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_ngons_result)}", icon_value = preview_collections["main"]["ngon_icon_32"].icon_id)
 
-                if mesh_vfy_prefs.count_e_poles:
-                    row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_e_poles_result)}")
+                if mesh_vfy_prefs.count_e_poles or mesh_vfy_prefs.count_n_poles:
+                    row = col.row(align = True)
+
+                    if mesh_vfy_prefs.count_n_poles:
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_n_poles_result)}", icon_value = preview_collections["main"]["npole_icon_32"].icon_id)
+
+                    if mesh_vfy_prefs.count_e_poles:
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_e_poles_result)}", icon_value = preview_collections["main"]["epole_icon_32"].icon_id)
 
             if mesh_vfy_prefs.tforms_applied:
                 if not mesh_vfy_prefs.tforms_applied_result:
@@ -175,40 +182,40 @@ class MESHVFY_PT_results(PanelInfo, Panel):
                     box = layout.box()
                     row = box.row()
 
-                    row.label(text = f"[{mesh_vfy_prefs.zeroed_tforms_amount}] Origin not at 0,0,0", icon = "ERROR")
+                    row.label(text = f"[{mesh_vfy_prefs.zeroed_tforms_amount}] Origins not at 0,0,0", icon = "ERROR")
 
             if mesh_vfy_prefs.manifold_meshes:
                 if mesh_vfy_prefs.manifold_loose_wire_result or mesh_vfy_prefs.manifold_double_faces_result or not mesh_vfy_prefs.manifold_airtight_result:
                     box = layout.box()
                     row = box.row()
 
-                    row.label(text = "Meshes are Not Manifold:", icon = "ERROR")
+                    row.label(text = "Potentially Not Manifold:", icon = "ERROR")
                     
                     row = box.row()
 
                     if mesh_vfy_prefs.manifold_loose_wire_result:
                         box_inner = row.box()
-                        box_inner.label(text = "    - Loose vertices or wire edges that")
+                        box_inner.label(text = "    - Non-polygonal loose vertices")
                         row_inner = box_inner.row()
-                        row_inner.label(text = "    don't make up a polygon detected")
+                        row_inner.label(text = "    or wire edges detected")
                         row_inner.operator("mesh_vfy.verify_mesh", text = '', icon = 'RESTRICT_SELECT_OFF')
 
                         row = box.row()
 
                     if mesh_vfy_prefs.manifold_double_faces_result:
                         box_inner = row.box()
-                        box_inner.label(text = "    - Multi-faced/sided geometry detected")
+                        box_inner.label(text = "    - Tri-faced edges detected")
                         row_inner = box_inner.row()
-                        row_inner.label(text = "    (edges that make up 3+ faces)")
+                        row_inner.label(text = "    (edges with 3+ faces)")
                         row_inner.operator("mesh_vfy.verify_mesh", text = '', icon = 'RESTRICT_SELECT_OFF')
 
                         row = box.row()
 
                     if not mesh_vfy_prefs.manifold_airtight_result:
                         box_inner = row.box()
-                        box_inner.label(text = "    - Non-Airtight geometry that contain")
+                        box_inner.label(text = "    - Non-Airtight geometry with")
                         row_inner = box_inner.row()
-                        row_inner.label(text = "    gaps in your meshes detected")
+                        row_inner.label(text = "    mesh gaps detected")
                         row_inner.operator("mesh_vfy.verify_mesh", text = '', icon = 'RESTRICT_SELECT_OFF')
 
             if mesh_vfy_prefs.correct_normal_orient:
@@ -216,21 +223,21 @@ class MESHVFY_PT_results(PanelInfo, Panel):
                         box = layout.box()
                         row = box.row()
 
-                        row.label(text = f"[{mesh_vfy_prefs.correct_normal_orient_amount}] Faces with wrong normal orientation", icon = "ERROR")
+                        row.label(text = f"[{mesh_vfy_prefs.correct_normal_orient_amount}] Incorrect normal orientation", icon = "ERROR")
                 
             if mesh_vfy_prefs.flipped_uvs:
                 if mesh_vfy_prefs.flipped_uvs_result:
                     box = layout.box()
                     row = box.row()
                     
-                    row.label(text = f"[{mesh_vfy_prefs.flipped_uvs_amount}] Objects with Possible Flipped Detected", icon = "ERROR")
+                    row.label(text = f"[{mesh_vfy_prefs.flipped_uvs_amount}] Potential Flipped UVs", icon = "ERROR")
         else:
             row = layout.row()
             row.label(text = "No Results to Show Just Yet.", icon = "INFO")
 
 
 class MESHVFY_PT_scene_objects_list(PanelInfo, Panel):
-    bl_label = 'View Layer Object Polys List'
+    bl_label = 'View Layer Object Poly List'
 
     def draw(self, context):
         mesh_vfy_prefs = context.scene.mesh_vfy_prefs
@@ -306,7 +313,12 @@ def register():
 
     # load a preview thumbnail of a file and store in the previews collection
     pcoll.load("msh_verify_logo", os.path.join(my_icons_dir, "msh_verify_logo.png"), 'IMAGE')
-
+    pcoll.load("tri_icon_32", os.path.join(my_icons_dir, "tri_icon_32.png"), 'IMAGE')
+    pcoll.load("quad_icon_32", os.path.join(my_icons_dir, "quad_icon_32.png"), 'IMAGE')
+    pcoll.load("ngon_icon_32", os.path.join(my_icons_dir, "ngon_icon_32.png"), 'IMAGE')
+    pcoll.load("npole_icon_32", os.path.join(my_icons_dir, "npole_icon_32.png"), 'IMAGE')
+    pcoll.load("epole_icon_32", os.path.join(my_icons_dir, "epole_icon_32.png"), 'IMAGE')
+    
     preview_collections["main"] = pcoll
 
 def unregister():
