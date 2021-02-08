@@ -69,9 +69,9 @@ class MESHVFY_PT_configure_object_checks(PanelInfo, Panel):
         col.separator(factor=.25)
         col.prop(mesh_vfy_prefs, 'manifold_meshes')
         col.separator(factor=.25)
-        col.prop(mesh_vfy_prefs, 'zeroed_tforms')
+        col.prop(mesh_vfy_prefs, 'zeroed_origins')
         col.separator(factor=.25)
-        col.prop(mesh_vfy_prefs, 'flipped_uvs', text = '_Origins within Bounding Box')
+        col.prop(mesh_vfy_prefs, 'origin_in_bbox')
         col.separator(factor=.25)
         col.prop(mesh_vfy_prefs, 'correct_normal_orient')
         col.separator(factor=.25)
@@ -79,13 +79,19 @@ class MESHVFY_PT_configure_object_checks(PanelInfo, Panel):
         split = col.split(factor=.7)
         col_left = split.column()
         col_right = split.column()
-        col_left.prop(mesh_vfy_prefs, 'flipped_uvs', text = '_Objects contain Prefix:')
-        col_right.prop(mesh_vfy_prefs, 'object_prefix')
+        col_left.prop(mesh_vfy_prefs, 'no_overlapping_verts')
+        col_right.prop(mesh_vfy_prefs, 'overlapping_verts_margin')
 
-        col_left.separator(factor=.25)
-        col_right.separator(factor=.25)
-        col_left.prop(mesh_vfy_prefs, 'flipped_uvs', text = '_Objects contain Suffix:')
-        col_right.prop(mesh_vfy_prefs, 'object_suffix')
+        #split = col.split(factor=.7)
+        #col_left = split.column()
+        #col_right = split.column()
+        #col_left.prop(mesh_vfy_prefs, 'flipped_uvs', text = '_Objects contain Prefix:')
+        #col_right.prop(mesh_vfy_prefs, 'object_prefix')
+#
+        #col_left.separator(factor=.25)
+        #col_right.separator(factor=.25)
+        #col_left.prop(mesh_vfy_prefs, 'flipped_uvs', text = '_Objects contain Suffix:')
+        #col_right.prop(mesh_vfy_prefs, 'object_suffix')
 
 
 class MESHVFY_PT_configure_uv_checks(PanelInfo, Panel):
@@ -142,29 +148,29 @@ class MESHVFY_PT_results(PanelInfo, Panel):
                     row = col.row(align = True)
 
                     if mesh_vfy_prefs.count_tris:
-                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_tris_result)}", icon_value = preview_collections["main"]["tri_icon_32"].icon_id)
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_tris_amount)}" if mesh_vfy_prefs.count_tris_result else '-', icon_value = preview_collections["main"]["tri_icon_32"].icon_id)
 
                     if mesh_vfy_prefs.count_quads:
-                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_quads_result)}", icon_value = preview_collections["main"]["quad_icon_32"].icon_id)
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_quads_amount)}" if mesh_vfy_prefs.count_quads_result else '-', icon_value = preview_collections["main"]["quad_icon_32"].icon_id)
 
                     if mesh_vfy_prefs.count_ngons:
-                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_ngons_result)}", icon_value = preview_collections["main"]["ngon_icon_32"].icon_id)
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_ngons_amount)}" if mesh_vfy_prefs.count_ngons_result else '-', icon_value = preview_collections["main"]["ngon_icon_32"].icon_id)
 
                 if mesh_vfy_prefs.count_e_poles or mesh_vfy_prefs.count_n_poles:
                     row = col.row(align = True)
 
                     if mesh_vfy_prefs.count_n_poles:
-                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_n_poles_result)}", icon_value = preview_collections["main"]["npole_icon_32"].icon_id)
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_n_poles_amount)}" if mesh_vfy_prefs.count_n_poles_result else '-', icon_value = preview_collections["main"]["npole_icon_32"].icon_id)
 
                     if mesh_vfy_prefs.count_e_poles:
-                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_e_poles_result)}", icon_value = preview_collections["main"]["epole_icon_32"].icon_id)
+                        row.operator("mesh_vfy.verify_mesh", text = f"{convert_number(mesh_vfy_prefs.count_e_poles_amount)}" if mesh_vfy_prefs.count_e_poles_result else '-', icon_value = preview_collections["main"]["epole_icon_32"].icon_id)
 
             if mesh_vfy_prefs.tforms_applied:
                 if not mesh_vfy_prefs.tforms_applied_result:
                     box = layout.box()
                     row = box.row()
 
-                    row.label(text = f"[{mesh_vfy_prefs.tforms_applied_amount}] Transforms are not Applied", icon = "ERROR")
+                    row.label(text = f"[{mesh_vfy_prefs.tforms_applied_amount}] Unapplied Transforms", icon = "ERROR")
 
                     row.operator("mesh_vfy.verify_mesh", text = '', icon = 'RESTRICT_SELECT_OFF')
 
@@ -177,12 +183,19 @@ class MESHVFY_PT_results(PanelInfo, Panel):
 
                     row.operator("mesh_vfy.verify_mesh", text = '', icon = 'RESTRICT_SELECT_OFF')
 
-            if mesh_vfy_prefs.zeroed_tforms:
-                if not mesh_vfy_prefs.zeroed_tforms_result:
+            if mesh_vfy_prefs.zeroed_origins:
+                if not mesh_vfy_prefs.zeroed_origins_result:
                     box = layout.box()
                     row = box.row()
 
-                    row.label(text = f"[{mesh_vfy_prefs.zeroed_tforms_amount}] Origins not at 0,0,0", icon = "ERROR")
+                    row.label(text = f"[{mesh_vfy_prefs.zeroed_origins_amount}] Origins not at 0,0,0", icon = "ERROR")
+
+            if mesh_vfy_prefs.origin_in_bbox:
+                if not mesh_vfy_prefs.origin_in_bbox_result:
+                    box = layout.box()
+                    row = box.row()
+
+                    row.label(text = f"[{mesh_vfy_prefs.origin_in_bbox_amount}] Origins not within bounding box", icon = "ERROR")
 
             if mesh_vfy_prefs.manifold_meshes:
                 if mesh_vfy_prefs.manifold_loose_wire_result or mesh_vfy_prefs.manifold_double_faces_result or not mesh_vfy_prefs.manifold_airtight_result:
@@ -200,18 +213,18 @@ class MESHVFY_PT_results(PanelInfo, Panel):
                         row_inner.label(text = "    or wire edges detected")
                         row_inner.operator("mesh_vfy.verify_mesh", text = '', icon = 'RESTRICT_SELECT_OFF')
 
+                    if mesh_vfy_prefs.manifold_double_faces_result:
                         row = box.row()
 
-                    if mesh_vfy_prefs.manifold_double_faces_result:
                         box_inner = row.box()
                         box_inner.label(text = "    - Tri-faced edges detected")
                         row_inner = box_inner.row()
                         row_inner.label(text = "    (edges with 3+ faces)")
                         row_inner.operator("mesh_vfy.verify_mesh", text = '', icon = 'RESTRICT_SELECT_OFF')
 
-                        row = box.row()
-
                     if not mesh_vfy_prefs.manifold_airtight_result:
+                        row = box.row()
+                        
                         box_inner = row.box()
                         box_inner.label(text = "    - Non-Airtight geometry with")
                         row_inner = box_inner.row()
@@ -224,6 +237,20 @@ class MESHVFY_PT_results(PanelInfo, Panel):
                         row = box.row()
 
                         row.label(text = f"[{mesh_vfy_prefs.correct_normal_orient_amount}] Incorrect normal orientation", icon = "ERROR")
+
+            #if mesh_vfy_prefs.correct_normal_orient:
+            #    if not mesh_vfy_prefs.correct_normal_orient_result:
+            #            box = layout.box()
+            #            row = box.row()
+#
+            #            row.label(text = f"[{mesh_vfy_prefs.correct_normal_orient_amount}] Incorrect normal orientation", icon = "ERROR")
+
+            if mesh_vfy_prefs.no_overlapping_verts:
+                if not mesh_vfy_prefs.no_overlapping_verts_result:
+                    box = layout.box()
+                    row = box.row()
+
+                    row.label(text = f"[{mesh_vfy_prefs.no_overlapping_verts_amount}] Overlapping vertices detected", icon = "ERROR")
                 
             if mesh_vfy_prefs.flipped_uvs:
                 if mesh_vfy_prefs.flipped_uvs_result:

@@ -1,5 +1,5 @@
 import bpy
-from bpy.props import StringProperty, IntProperty, PointerProperty, BoolProperty
+from bpy.props import StringProperty, IntProperty, PointerProperty, BoolProperty, FloatProperty
 from bl_operators.presets import AddPresetBase
 from bl_ui.utils import PresetPanel
 from bpy.types import Panel, Menu
@@ -34,9 +34,9 @@ class MESHVFY_OT_add_preset(AddPresetBase, bpy.types.Operator):
         "mesh_vfy_prefs.count_tris",
         "mesh_vfy_prefs.count_quads",
         "mesh_vfy_prefs.count_ngons",
-        "mesh_vfy_prefs.count_tris_result",
-        "mesh_vfy_prefs.count_quads_result",
-        "mesh_vfy_prefs.count_ngons_result"]
+        "mesh_vfy_prefs.count_tris_amount",
+        "mesh_vfy_prefs.count_quads_amount",
+        "mesh_vfy_prefs.count_ngons_amount"]
 
     # Where to store the preset
     preset_subdir = "mesh_vfy"
@@ -54,19 +54,24 @@ class MESHVFY_property_group(bpy.types.PropertyGroup):
 
     verify_mesh_ran: BoolProperty(default = False)
 
-    use_selected_only: BoolProperty(name = 'Run on Selected Only', default = True)
+    use_selected_only: BoolProperty(name = 'Use Selected Only', default = True)
 
     count_tris: BoolProperty(name = 'Tris', default = True)
     count_quads: BoolProperty(name = 'Quads', default = True)
     count_ngons: BoolProperty(name = 'nGons', default = True)
-    count_tris_result: IntProperty(name = '', default = 0)
-    count_quads_result: IntProperty(name = '', default = 0)
-    count_ngons_result: IntProperty(name = '', default = 0)
+    count_tris_result: BoolProperty(name = '', default = False)
+    count_quads_result: BoolProperty(name = '', default = False)
+    count_ngons_result: BoolProperty(name = '', default = False)
+    count_tris_amount: IntProperty(name = '', default = 0)
+    count_quads_amount: IntProperty(name = '', default = 0)
+    count_ngons_amount: IntProperty(name = '', default = 0)
 
     count_n_poles: BoolProperty(name = 'N-Poles', default = False)
     count_e_poles: BoolProperty(name = 'E-Poles', default = False)
-    count_n_poles_result: IntProperty(name = '', default = 0)
-    count_e_poles_result: IntProperty(name = '', default = 0)
+    count_n_poles_result: BoolProperty(name = '', default = False)
+    count_e_poles_result: BoolProperty(name = '', default = False)
+    count_n_poles_amount: IntProperty(name = '', default = 0)
+    count_e_poles_amount: IntProperty(name = '', default = 0)
 
     tforms_applied: BoolProperty(name = 'Transforms Applied (Rot & Scale)', default = True)
     tforms_applied_result: BoolProperty(name = '', default = True)
@@ -80,17 +85,31 @@ class MESHVFY_property_group(bpy.types.PropertyGroup):
     manifold_double_faces_result: BoolProperty(name = '', default = False)
     manifold_airtight_result: BoolProperty(name = '', default = True)
 
-    zeroed_tforms: BoolProperty(name = 'Origins at 0,0,0', default = False)
-    zeroed_tforms_result: BoolProperty(name = '', default = True)
-    zeroed_tforms_amount: IntProperty(name = '', default = 0)
+    zeroed_origins: BoolProperty(name = 'Origins at 0,0,0', default = False)
+    zeroed_origins_result: BoolProperty(name = '', default = True)
+    zeroed_origins_amount: IntProperty(name = '', default = 0)
+
+    origin_in_bbox: BoolProperty(name = 'Origins within Bounding Box', default = False)
+    origin_in_bbox_result: BoolProperty(name = '', default = True)
+    origin_in_bbox_amount: IntProperty(name = '', default = 0)
 
     correct_normal_orient: BoolProperty(name = 'Correct Normal Orientation', default = True)
     correct_normal_orient_result: BoolProperty(name = '', default = True)
     correct_normal_orient_amount: IntProperty(name = '', default = 0)
 
+    no_overlapping_verts: BoolProperty(name = 'No Overlapping Vertices', default = True)
+    no_overlapping_verts_result: BoolProperty(name = '', default = True)
+    no_overlapping_verts_amount: IntProperty(name = '', default = 0)
+
     flipped_uvs: BoolProperty(name = 'No Flipped UVs', default = False)
     flipped_uvs_result: BoolProperty(name = '', default = False)
     flipped_uvs_amount: IntProperty(name = "", default = 0)
+    
+    overlapping_verts_margin: FloatProperty(name = "",
+                                            description = "The distance margin to decide whether a vertex is overlapping or not",
+                                            default = 0.01,
+                                            min = 0.0001,
+                                            subtype = 'DISTANCE')
 
     object_prefix: StringProperty(name = "",
                                   description = "Define the prefix to look for when searching through objects",
